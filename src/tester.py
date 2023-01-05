@@ -1,8 +1,8 @@
-'''
+"""
 tester.py
 
 Test the trained 3dgan models
-'''
+"""
 
 import torch
 from torch import optim
@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import params
 import visdom
+from pyvox.models import Vox
+from pyvox.writer import VoxWriter
 
 
 # def test_gen(args):
@@ -32,19 +34,22 @@ import visdom
 #     print (test_z.shape)
 # np.save("test_z", test_z)
 
-def tester(args):
-    print('Evaluation Mode...')
 
-    image_saved_path = params.output_dir + '/' + args.model_name + '/' + args.logs + '/test_outputs'
+def tester(args):
+    print("Evaluation Mode...")
+
+    image_saved_path = (
+        params.output_dir + "/" + args.model_name + "/" + args.logs + "/test_outputs"
+    )
     if not os.path.exists(image_saved_path):
         os.makedirs(image_saved_path)
 
     if args.use_visdom:
         vis = visdom.Visdom()
 
-    save_file_path = params.output_dir + '/' + args.model_name
-    pretrained_file_path_G = save_file_path + '/' + args.logs + '/models/G.pth'
-    pretrained_file_path_D = save_file_path + '/' + args.logs + '/models/D.pth'
+    save_file_path = params.output_dir + "/" + args.model_name
+    pretrained_file_path_G = save_file_path + "/" + args.logs + "/models/G.pth"
+    pretrained_file_path_D = save_file_path + "/" + args.logs + "/models/D.pth"
 
     print(pretrained_file_path_G)
 
@@ -52,13 +57,19 @@ def tester(args):
     G = net_G(args)
 
     if not torch.cuda.is_available():
-        G.load_state_dict(torch.load(pretrained_file_path_G, map_location={'cuda:0': 'cpu'}))
-        D.load_state_dict(torch.load(pretrained_file_path_D, map_location={'cuda:0': 'cpu'}))
+        G.load_state_dict(
+            torch.load(pretrained_file_path_G, map_location={"cuda:0": "cpu"})
+        )
+        D.load_state_dict(
+            torch.load(pretrained_file_path_D, map_location={"cuda:0": "cpu"})
+        )
     else:
         G.load_state_dict(torch.load(pretrained_file_path_G))
-        D.load_state_dict(torch.load(pretrained_file_path_D, map_location={'cuda:0': 'cpu'}))
+        D.load_state_dict(
+            torch.load(pretrained_file_path_D, map_location={"cuda:0": "cpu"})
+        )
 
-    print('visualizing model')
+    print("visualizing model")
 
     G.to(params.device)
     D.to(params.device)
@@ -84,8 +95,12 @@ def tester(args):
         # criterion = nn.BCELoss()
         # print (y_prob.item(), criterion(y_prob, y_real).item())
 
+        vox = Vox.from_dense(samples)
+        vox_path = image_saved_path + "/voxel_" + str(i) + ".vox"
+
+        VoxWriter(vox_path, vox).write()
         # visualization
         if not args.use_visdom:
-            SavePloat_Voxels(samples, image_saved_path, 'tester_' + str(i))  # norm_
+            SavePloat_Voxels(samples, image_saved_path, "tester_" + str(i))  # norm_
         else:
             plotVoxelVisdom(samples[0, :], vis, "tester_" + str(i))
